@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Example</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+
+
+	 
+	<select id="categoryFilter" hx-get="/api/metadata" hx-trigger="change" hx-vals="{categoryFilter: value}">
+		<!-- Options will be populated dynamically -->
+	</select>
+	<select id="tldFilter" hx-get="/api/metadata" hx-trigger="change" hx-vals="{tldFilter: value}">
+		<!-- Options will be populated dynamically -->
+	</select>
+	<select id="yearMonthFilter" hx-get="/api/metadata" hx-trigger="change" hx-vals="{yearMonthFilter: value}">
+		<!-- Options will be populated dynamically -->
+	</select>
+	
+ 
+
+
+<table id="dataTable" class="w-full mx-auto border rounded-md bg-slate-50">
+    <thead class="  w-full sticky top-0 bg-[#1f2937] py-2   text-white">
+        <tr>
+            <th hx-get="/api/metadata?sort=domainname"			 	hx-trigger="click" data-sort="domainname">Site <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=totalUrls"			 	hx-trigger="click" data-sort="totalUrls">#urls <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=isoTimestamp"		 	hx-trigger="click" data-sort="isoTimestamp">Date <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=cat"			 			hx-trigger="click" data-sort="cat">Category <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=CriticalCount"		 	hx-trigger="click" data-sort="CriticalCount">Critical <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=SeriousCount"		 	hx-trigger="click" data-sort="SeriousCount">Serious <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=ModerateCount"		 	hx-trigger="click" data-sort="ModerateCount">Moderate <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=MinorCount"			 	hx-trigger="click" data-sort="MinorCount">Minor <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=totalViolationsCount" 	hx-trigger="click" data-sort="totalViolationsCount">Total <span class="sort-indicator"></span></th>
+            <th hx-get="/api/metadata?sort=errorPercentage"		 	hx-trigger="click" data-sort="errorPercentage">Error% <span class="sort-indicator"></span></th>
+            <!-- Add more headers as per your requirements -->
+        </tr>
+    </thead>
+    <tbody>
+        <!-- The metadata will be loaded here -->
+    </tbody>
+</table>
+
+
+
+	<script>
+let globalData = [];
+let currentSortColumn = null;
+let isAscending = true;
+
+
+	function extractDomain(url) {
+				// Remove http:// or https://
+				url = url.replace(/^https?:\/\//, '');
+				url = url.replace(/^www\./, '');
+				return url.split('/')[0];
+				}
+								  
+        	function filterData() {
+									// Start with the entire dataset
+									
+					let filteredData = [...globalData];  // Create a copy of globalData
+					filteredData = sortData(filteredData, currentSortColumn, isAscending);
+					
+					const categoryValue = document.getElementById('categoryFilter').value;
+					const tldValue = document.getElementById('tldFilter').value;
+					const yearMonthValue = document.getElementById('yearMonthFilter').value;
+
+
+					fetch('/api/metadata')
+						.then(response => response.json())
+						.then(data => {
+							// filter the data based on the dropdown values
+							 filteredData = data;
+
+							if (categoryValue !== 'all') {
+								filteredData = filteredData.filter(item => item.meta.cat === categoryValue);
+							}
+
+							if (tldValue !== 'all') {
+								const domainRegex = new RegExp(`.${tldValue}$`);
+								filteredData = filteredData.filter(item => domainRegex.test(item.meta.domainname));
+							}
+
+							if (yearMonthValue !== 'all') {
+								const [year, month] = yearMonthValue.split('-');
+								filteredData = filteredData.filter(item => {
+									const date = new Date(item.meta.isoTimestamp);
+									return date.getFullYear() === parseInt(year) && date.getMonth() + 1 === parseInt(month);
+								});
+							}
+
+						
+							// render the filtered data into the dataTable
+							const tbody = document.getElementById('dataTable').querySelector('tbody');
+							tbody.innerHTML = ''; // Clear previous rows
+							
+							// Render each item as a row in the table
+							filteredData.forEach(item => {
+								const row = tbody.insertRow(); // Create a new row
+								console.log('ITEM', item)
+								console.log('ITEM', item.meta)
+								// Site
+								let ss = item.meta.screenshot
+								let runname = extractDomain(item.meta.domainname)
+								let runlink = `/a11y/${item.meta.domainfolder}`;
+								const domainCell = row.insertCell();
+								domainCell.innerHTML = `<span class="hover-container">
+									<a href="${runlink}" class="block w-48 text-xs text-center md:text-sm sm:text-xs lg:text-base 1flex-1">${runname}</a>
+									<img src="${ss}" class="screenshot">
+								</span>`
+								
+								
+								// item.meta?.domainname || 'N/A';
+								
+									// #urls
+										const urlCell = row.insertCell();
+										urlCell.textContent = item.meta?.totalUrls || 'N/A';
+									// Date
+										const dateCell = row.insertCell();
+										dateCell.textContent = item.meta?.readableDate || 'N/A';
+									// Category
+										const catCell = row.insertCell();
+										catCell.textContent = item.meta?.cat || 'N/A';
+									// Critical
+										const CriticalCell = row.insertCell();
+										CriticalCell.textContent = item.meta?.impactCountsCritical || '0';
+									// Serious
+										const SeriousCell = row.insertCell();
+										SeriousCell.textContent = item.meta?.impactCountsSerious || '0';
+									// Moderate
+										const ModerateCell = row.insertCell();
+										ModerateCell.textContent = item.meta?.impactCountsModerate || '0';
+									// Minor
+										const MinorCell = row.insertCell();
+										MinorCell.textContent = item.meta?.impactCountsMinor || '0';
+									// Total
+										const violationsCell = row.insertCell();
+										let totalViolationsCount = item.meta?.totalViolationsCount || '0';
+										violationsCell.innerHTML = `<span  class="flex-1 hidden text-xs text-center md:text-sm sm:text-xs lg:text-base md:block"> ${totalViolationsCount}</span> `
+									// Error
+										const errorPercentageCell = row.insertCell();
+										// let errorPercentage = parseFloat(meta.errorPercentage.toFixed(2));
+										// errorPercentageCell.textContent = item.meta?.errorPercentage || 'N/A';
+										let errorPercentage = 'N/A';
+
+												if (typeof item.meta.errorPercentage === 'number' && !isNaN(item.meta.errorPercentage)) {
+													errorPercentage = parseFloat(item.meta.errorPercentage).toFixed(2) + "%";
+												}
+										errorPercentageCell.innerHTML = `<span  class="flex-1 hidden text-xs text-center md:text-sm sm:text-xs lg:text-base md:block"> ${errorPercentage}</span>`
+									});
+										
+								
+							});  /// end fetch
+						}
+
+						// On load, populate the filter dropdowns with unique values
+						window.addEventListener('load', () => {
+							fetch('/api/metadata')
+								.then(response => response.json())
+								.then(data => {
+									globalData = data;
+									const categories = new Set(data.map(item => item.meta.cat));
+									populateDropdown('categoryFilter', Array.from(categories));
+
+									const tlds = new Set(data.map(item => item.meta.domainname.split('.').pop()));
+									populateDropdown('tldFilter', Array.from(tlds));
+
+									const yearMonths = new Set(data.map(item => {
+										const date = new Date(item.meta.isoTimestamp);
+										return `${date.getFullYear()}-${date.getMonth() + 1}`; // Month is 0-indexed
+									}));
+									populateDropdown('yearMonthFilter', Array.from(yearMonths));
+									
+									// Call the filterData function to populate the table on initial load
+									filterData();
+								});
+						});
+
+
+						function populateDropdown(dropdownId, values) {
+							const dropdown = document.getElementById(dropdownId);
+							const allOption = document.createElement('option');
+							allOption.value = 'all';
+							allOption.textContent = 'All';
+							dropdown.appendChild(allOption);
+							
+							values.forEach(value => {
+								const option = document.createElement('option');
+								option.value = value;
+								option.textContent = value;
+								dropdown.appendChild(option);
+							});
+						}
+
+
+					
+
+					
+
+						function handleSort(event) {
+							const sortProperty = event.target.getAttribute('data-sort');
+
+							if (currentSortColumn === sortProperty) {
+								isAscending = !isAscending;
+							} else {
+								isAscending = true;
+							}
+
+							currentSortColumn = sortProperty;
+
+							// Sort the entire dataset
+							globalData = sortData(globalData, sortProperty, isAscending);
+							
+							// Filter and render the results
+							filterData();
+
+							updateSortIndicators();
+						}
+						
+					function sortData(dataToSort, sortProperty, isAscending) {
+						return dataToSort.sort((a, b) => {
+							let aValue = a.meta?.[sortProperty] || '';
+							let bValue = b.meta?.[sortProperty] || '';
+
+							// Explicit function to check if a value is numeric
+							function isNumeric(n) {
+								return !isNaN(parseFloat(n)) && isFinite(n);
+							}
+
+							// Check if values are numeric
+							if (isNumeric(aValue) && isNumeric(bValue)) {
+								aValue = parseFloat(aValue);
+								bValue = parseFloat(bValue);
+							}
+
+							if (aValue < bValue) return isAscending ? -1 : 1;
+							if (aValue > bValue) return isAscending ? 1 : -1;
+							return 0;
+						});
+					}
+
+								function updateSortIndicators() {
+									headers.forEach(header => {
+										const sortProperty = header.getAttribute('data-sort');
+										const indicator = header.querySelector('.sort-indicator');
+										if (sortProperty === currentSortColumn) {
+											indicator.textContent = isAscending ? '↑' : '↓';
+										} else {
+											indicator.textContent = ''; // Clear any previous arrows
+										}
+									});
+								}
+
+
+								let headers;  // Globally define this
+
+document.addEventListener('DOMContentLoaded', function() {
+    headers = document.querySelectorAll('th[data-sort]');
+    headers.forEach(header => {
+        header.addEventListener('click', handleSort);
+    });
+});
+			
+
+    </script>
+</body>
+</html>

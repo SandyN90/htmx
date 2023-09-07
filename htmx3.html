@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Example</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+	<!-- <form hx-get="/api/metadata2" hx-trigger="change" hx-target="#data-table"> -->
+		<form id="filterForm" hx-get="/api/metadata2" hx-trigger="change" hx-target="#data-table">
+
+		<!-- Filtering dropdowns -->
+		<select name="cat">
+			<option value="">All Categories</option>
+			<option value="energy">Energy</option>
+			<option value="sports">Shopping</option>
+			<!-- ...other filter options... -->
+		</select>
+		
+		<select name="tld">
+			<option value="">All TLDs</option>
+			<option value="com">.com</option>
+			<option value="nl">.nl</option>
+			<!-- ...other filter options... -->
+		</select>
+	
+		<!-- Sorting options -->
+		<!-- Sorting options -->
+		
+<button type="button" data-sort-field="fieldToSort" value="asc">Sort (Asc)</button>
+<button type="button" data-sort-field="fieldToSort" value="desc">Sort (Desc)</button>
+<input type="hidden" name="sort" id="sortField" value="">
+<input type="hidden" name="order" id="sortOrder" value="">
+
+
+		<!-- ...similar buttons for other columns... -->
+	
+	
+	</form>
+
+		<table>
+			<thead>
+ 				<th data-sort="domainname" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-target="#data-table" onclick="prepareHxVals(event)">Domain <span class="sort-indicator"></span></th>
+				<th data-sort="cat" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-target="#data-table" onclick="prepareHxVals(event)">Category <span class="sort-indicator"></span></th>
+				<th data-sort="tld" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-target="#data-table" onclick="prepareHxVals(event)">Category <span class="sort-indicator"></span></th>
+	 
+			</thead>
+			<tbody id="data-table">
+	 
+				<!-- data rows here -->
+			</tbody>
+		</table>
+	 
+ 
+	<script>
+		htmx.config.logAll = true;
+
+//load data by default:
+window.addEventListener('load', function() {
+    console.log("Window Loaded");
+    fetch('/api/metadata2')
+    .then(response => response.text())
+    .then(data => {
+		// console.log(data);
+		document.getElementById('data-table').innerHTML = data;
+    })
+    .catch(error => {
+        console.error("Error fetching data on load:", error);
+    });
+});
+
+function prepareHxVals(evt) {
+    const th = evt.currentTarget;
+    const sort = th.getAttribute('data-sort');
+    const order = toggleOrder(sort);
+    
+    // Get filtering parameters
+    const cat = document.querySelector('select[name="cat"]').value;
+    const tld = document.querySelector('select[name="tld"]').value;
+
+    // Combine sorting and filtering parameters
+    const hxVals = {
+        sort: sort,
+        order: order,
+        cat: cat,
+        tld: tld
+    };
+
+    th.setAttribute('hx-vals', JSON.stringify(hxVals));
+}
+
+
+function toggleOrder(column) {
+    const th = document.querySelector(`[data-sort="${column}"]`);
+    if (!th) return 'asc'; // return default if th not found
+    
+    const currentOrder = th.getAttribute('data-order') || 'asc';
+    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    th.setAttribute('data-order', newOrder);
+    
+    const indicator = th.querySelector('.sort-indicator');
+    indicator.textContent = newOrder === 'asc' ? '↑' : '↓';
+
+    return newOrder; // Return the new order
+}
+	 
+
+document.getElementById('data-table').addEventListener('htmx:afterSwap', function(event) {
+    const newTbody = event.target; // this is the new tbody that htmx just swapped in
+    const cat = newTbody.getAttribute('data-cat');
+    const tld = newTbody.getAttribute('data-tld');
+
+    document.querySelector('select[name="cat"]').value = cat;
+    document.querySelector('select[name="tld"]').value = tld;
+});
+
+
+
+/// auto update form submit
+	document.getElementById("filterForm").addEventListener("change", function(event) {
+	console.log("Form Changed");
+
+    event.preventDefault();
+    htmx.trigger(this, 'htmx:trigger');
+});
+
+ 
+
+
+	</script>
+
+	 
+</body>
+</html>

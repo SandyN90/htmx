@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Example</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+	<select id="categoryFilter" hx-get="/api/metadata2" hx-trigger="change" hx-target="#dataBody" hx-vals='{ "cat": getSelectedValue("categoryFilter"), "tld": getSelectedValue("tldFilter"), "yearMonth": getSelectedValue("yearMonthFilter") }'></select>
+	<select id="tldFilter" hx-get="/api/metadata2" hx-trigger="change" hx-target="#dataBody" hx-vals='{ "cat": getSelectedValue("categoryFilter"), "tld": getSelectedValue("tldFilter"), "yearMonth": getSelectedValue("yearMonthFilter") }'></select>
+	<select id="yearMonthFilter" hx-get="/api/metadata2" hx-trigger="change" hx-target="#dataBody" hx-vals='{ "cat": getSelectedValue("categoryFilter"), "tld": getSelectedValue("tldFilter"), "yearMonth": getSelectedValue("yearMonthFilter") }'></select>
+	
+
+
+	<table>
+		<thead>
+			<!-- <th data-sort="domainname" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-vals='{"sort": "domainname", "order": toggleOrder("domainname")}'			hx-target="#dataBody">Domain <span class="sort-indicator"></span></th> -->
+			<th data-sort="domainname" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-target="#dataBody" onclick="prepareHxVals(event)">Domain <span class="sort-indicator"></span></th>
+			<th data-sort="cat" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-target="#dataBody" onclick="prepareHxVals(event)">Category <span class="sort-indicator"></span></th>
+
+			<!-- <th data-sort="domainname" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-vals="{sort: 'domainname', order: toggleOrder('domainname')}" hx-target="#dataBody">Domain <span class="sort-indicator"></span></th> -->
+			<!-- <th data-sort="cat" hx-get="/api/metadata2" hx-response="innerHTML" hx-trigger="click" hx-vals='{"sort": "cat", "order": toggleOrder("cat")}' hx-target="#dataBody">Category <span class="sort-indicator"></span></th> -->
+			<!-- ... other headers ... -->
+		</thead>
+		<tbody id="dataBody">
+ 
+			<!-- data rows here -->
+		</tbody>
+	</table>
+	
+	<script>
+function toggleOrder(column) {
+    const th = document.querySelector(`[data-sort="${column}"]`);
+    if (!th) return 'asc'; // return default if th not found
+    
+    const currentOrder = th.getAttribute('data-order') || 'asc';
+    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    th.setAttribute('data-order', newOrder);
+    
+    const indicator = th.querySelector('.sort-indicator');
+    indicator.textContent = newOrder === 'asc' ? '↑' : '↓';
+
+    return newOrder; // Return the new order
+}
+
+
+function updateParams(evt) {
+    // Get the clicked column
+    const th = evt.currentTarget;
+
+    // Find out its 'sort' and 'order' values
+    const sort = th.getAttribute('data-sort');
+    const order = th.getAttribute('data-order');
+
+    // Update the URL
+    const newURL = `/api/metadata2?sort=${sort}&order=${order}`;
+	console.log("Updated Params. New URL:", newURL);
+
+    th.setAttribute('hx-get', newURL);
+}
+
+function prepareHxVals(evt) {
+    const th = evt.currentTarget;
+    const sort = th.getAttribute('data-sort');
+    const order = toggleOrder(sort); // Call the toggleOrder function to get the order
+    th.setAttribute('hx-vals', JSON.stringify({sort: sort, order: order}));
+}
+
+
+/// Filter data
+function fillDropdown(dropdownId, values) {
+    const dropdown = document.getElementById(dropdownId);
+    
+    // Clear existing options
+    while (dropdown.firstChild) {
+        dropdown.removeChild(dropdown.firstChild);
+    }
+    
+    values.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        dropdown.appendChild(option);
+    });
+}
+
+
+function populateDropdowns() {
+    fetchData().then(data => {
+        console.log("Fetched data:", data); // Debug log
+        
+        const categories = [...new Set(data.map(item => item.category))];
+        console.log("Unique categories:", categories); // Debug log
+
+        const tlds = [...new Set(data.map(item => item.tld))];
+        console.log("Unique TLDs:", tlds); // Debug log
+
+        const yearMonths = [...new Set(data.map(item => item.yearMonth))];
+        console.log("Unique YearMonths:", yearMonths); // Debug log
+        
+        fillDropdown('categoryFilter', categories);
+        fillDropdown('tldFilter', tlds);
+        fillDropdown('yearMonthFilter', yearMonths);
+    }).catch(error => {
+        console.error("Error populating dropdowns:", error);
+    });
+}
+
+window.addEventListener('load', populateDropdowns);
+
+// document.addEventListener('DOMContentLoaded', populateDropdowns);
+
+async function fetchData() {
+    const response = await fetch("/api/metadata2");
+	   // Check the raw response text
+	   const clone = response.clone();
+
+	   const rawText = await clone.text();
+    console.log("Raw API Response:", rawText);
+    
+    if (!response.ok) {
+        throw new Error(`Network response was not ok. Status: ${response.status}`);
+    }
+
+    const parser = new DOMParser();
+    const htmlDoc = parser.parseFromString(rawText, 'text/html');
+    
+    const rows = htmlDoc.querySelectorAll("tr");
+
+    console.log("Rows found:", rows.length); // Log the number of rows found
+
+    const data = Array.from(rows).map(row => {
+        const domain = row.children[2].textContent;
+        const tld = domain.split('.').slice(-1)[0];
+        return {
+            category: row.querySelector(".category").textContent,
+            tld: tld,
+            yearMonth: new Date(row.querySelector(".yearMonth").textContent).toISOString().slice(0, 7) // Extract YYYY-MM format
+        };
+    });
+
+    return data;
+}
+
+ 
+
+
+	</script>
+</body>
+</html>

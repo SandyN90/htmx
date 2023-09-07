@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Example</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.5/htmx.min.js"></script>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+	
+	<select id="cat-dropdown" hx-get="/api/filters/cat" hx-trigger="load" hx-target="#cat-dropdown"></select>
+<select id="tld-dropdown" hx-get="/api/filters/tld" hx-trigger="load" hx-target="#tld-dropdown"></select>
+<select id="yearMonth-dropdown" hx-get="/api/filters/yearMonth" hx-trigger="load" hx-target="#yearMonth-dropdown"></select>
+
+<table>
+	<thead>
+	   <tr>
+		  <th data-sort="cat" hx-get="/api/metadata2" hx-swap="innerHTML">Category</th>
+		  <th data-sort="tld" hx-get="/api/metadata2" hx-swap="innerHTML">TLD</th>
+		  <th data-sort="yearMonth" hx-get="/api/metadata2" hx-swap="innerHTML">yearMonth</th>
+	   </tr>
+	</thead>
+	<tbody id="table" hx-get="/api/metadata2" hx-trigger="load change from:#cat-dropdown,#tld-dropdown,#yearMonth-dropdown" hx-swap="innerHTML">
+		
+	</tbody>
+ </table>
+
+	<script>
+	htmx.config.logging = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+   document.body.addEventListener('htmx:beforeRequest', function(event) {
+      const catValue = document.getElementById("cat-dropdown").value || null;
+      const tldValue = document.getElementById("tld-dropdown").value || null;
+      const yearMonthValue = document.getElementById("yearMonth-dropdown").value || null;
+
+      // Set the parameters for the request
+      event.detail.parameters = {
+         cat: catValue,
+         tld: tldValue,
+         yearMonth: yearMonthValue
+      };
+   });
+
+   // Event listeners for table headers to sort
+   document.querySelectorAll("th").forEach(header => {
+      header.addEventListener('click', function() {
+         const sortAttribute = this.getAttribute('data-sort');
+         if (sortAttribute) {
+            // Toggle between 'asc' and 'desc'
+            const currentOrder = header.getAttribute('data-order') || "asc";
+            const newOrder = currentOrder === "asc" ? "desc" : "asc";
+            
+            // Set the new order as data attribute
+            header.setAttribute('data-order', newOrder);
+
+            // You can also set the hx-vals attribute with the new sorting order
+            header.setAttribute('hx-vals', `{"sort": "${sortAttribute}", "order": "${newOrder}"}`);
+
+            // Trigger the htmx request
+            header.dispatchEvent(new Event('htmx:triggerRequest'));
+         }
+      });
+   });
+});
+
+
+	</script>
+
+</body>
+</html>

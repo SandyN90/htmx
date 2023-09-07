@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<!-- <%- include('partials/header') %> -->
+
+
+	
+  
+<div class="container pt-8 mx-auto">
+	<div id="reslistfilter" class="flex flex-col justify-center p-4 pb-4 mx-auto rounded-sm items-cesnter">
+	
+		<div class="text-lg">Results</div>
+<details>
+
+
+	<summary>
+		<span class="text-sm font-semibold ">Filter</span>
+	</summary>
+	<div class="flex flex-col gap-2 border rounded-md">
+		
+			<div class="flex flex-col gap-2 md:flex-row">
+
+				<select id="categoryDropdown" class="p-2 m-2">
+					<option value="">All Categories</option>
+					<!-- Categories will be populated here dynamically -->
+				</select>
+
+				<select id="tldDropdown" class="p-2 m-2">
+					<option value="">All languages/tld's</option>
+					<!-- Categories will be populated here dynamically -->
+				</select>
+				
+				<select id="yearDropdown" class="p-2 m-2">
+					<option value="">All years</option>
+					<!-- Options will be dynamically populated -->
+				</select>
+				
+				<select id="monthDropdown" class="p-2 m-2">
+					<option value="">All months</option>
+					<!-- Options will be dynamically populated -->
+				</select>
+
+
+
+	</div>
+	<button id="resetButton" class="inline-block w-32 p-1 m-1 text-sm border rounded-md">Reset</button>
+</div>
+</details>	
+
+		
+
+		<!-- Radio buttons for sorting -->
+<!-- <fieldset class="p-2">
+    <legend>Sort by violation type:</legend>
+    <label>  <input type="radio" name="sort" value="impactCountsMinor"> Minor    </label>
+    <label>  <input type="radio" name="sort" value="impactCountsModerate"> Moderate    </label>
+    <label>  <input type="radio" name="sort" value="impactCountsSerious"> Serious    </label>
+    <label>  <input type="radio" name="sort" value="impactCountsCritical"> Critical    </label> 
+	<legend>Or sort by:</legend>
+    <label>  <input type="radio" name="sort" value="totalViolationsCount"> Total violations    </label> 
+    <label>  <input type="radio" name="sort" value="errorPercentage"> Error percentage    </label>
+</fieldset> -->
+
+	</div>
+	<div class="flex justify-center min-h-full px-2 ">
+		<ul id="reslist"  class="w-full mx-auto border rounded-md bg-slate-50"></ul>
+	</div>
+</div>
+
+ 
+<div style="clear: both;"></div>
+
+<!-- <%- include('partials/footer') %> -->
+
+
+
+<script src="/app.js"></script>
+
+<script>
+// document.addEventListener('DOMContentLoaded', function() {
+//   const sitemapInput = document.getElementById('sitemapInput');
+//   const fileInput = document.getElementById('fileInput');
+//   const roomPrivate = document.getElementById('roomPrivate');
+//   const roomPublic = document.getElementById('roomPublic');
+
+//   roomPrivate.addEventListener('change', function() {
+//     if (this.checked) {
+//       sitemapInput.classList.remove('hidden');
+//       fileInput.classList.add('hidden');
+//     }
+//   });
+
+//   roomPublic.addEventListener('change', function() {
+//     if (this.checked) {
+//       fileInput.classList.remove('hidden');
+//       sitemapInput.classList.add('hidden');
+//     }
+//   });
+// });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sitemapInput = document.getElementById('sitemapInput');
+    const crawlInput = document.getElementById('crawlInput');
+    const fileInput = document.getElementById('fileInput');
+    const useSitemap = document.getElementById('useSitemap');
+    const crawlDomain = document.getElementById('crawlDomain');
+    const useFile = document.getElementById('useFile');
+
+	if (useSitemap.checked) {
+        sitemapInput.classList.remove('hidden');
+        crawlInput.classList.add('hidden');
+        fileInput.classList.add('hidden');
+    } else if (crawlDomain.checked) {
+        crawlInput.classList.remove('hidden');
+        sitemapInput.classList.add('hidden');
+        fileInput.classList.add('hidden');
+    } else if (useFile.checked) {
+        fileInput.classList.remove('hidden');
+        sitemapInput.classList.add('hidden');
+        crawlInput.classList.add('hidden');
+    }
+
+    useSitemap.addEventListener('change', function() {
+        if (this.checked) {
+            sitemapInput.classList.remove('hidden');
+            crawlInput.classList.add('hidden');
+            fileInput.classList.add('hidden');
+        }
+    });
+
+    crawlDomain.addEventListener('change', function() {
+        if (this.checked) {
+            crawlInput.classList.remove('hidden');
+            sitemapInput.classList.add('hidden');
+            fileInput.classList.add('hidden');
+        }
+    });
+
+    useFile.addEventListener('change', function() {
+        if (this.checked) {
+            fileInput.classList.remove('hidden');
+            sitemapInput.classList.add('hidden');
+            crawlInput.classList.add('hidden');
+        }
+    });
+});
+
+</script>
+
+
+</body>
+</html>

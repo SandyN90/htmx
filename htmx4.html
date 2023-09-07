@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX Example</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+	<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+	
+	<form id="filterForm" hx-get="/api/metadata2" hx-trigger="change" hx-target="#data-table">
+		<select name="cat">
+			<option value="">All Categories</option>
+			<option value="sports">Sports</option>
+			<option value="energy">Energy</option>
+			<!-- Add all your 50 categories here -->
+		</select>
+	</form>
+	
+	<table>
+		<thead>
+			<th data-sort="cat" hx-get="/api/metadata2" hx-trigger="click" hx-target="#data-table" hx-indicator="#loadingIndicator" onclick="prepareHxVals(event)">Category</th>
+			<th data-sort="tld" onclick="handleSort(event)">Top Level Domain</th>
+			<th data-sort="errors" onclick="handleSort(event)">Errors</th>
+			<th data-sort="errorpercentage" onclick="handleSort(event)">Error Percentage</th>
+		</thead>
+		<tbody id="data-table">
+			<!-- Data will be loaded here via htmx -->
+		</tbody>
+	</table>
+	
+	<script>
+		function handleSort(event) {
+    console.log("Handling sort...");
+    const column = event.currentTarget.getAttribute('data-sort');
+    console.log("Column:", column);
+    const order = toggleOrder(column);
+    console.log("Order:", order);
+    const category = document.querySelector('select[name="cat"]').value;
+    console.log("Category:", category);
+    htmx.ajax('GET', `/api/metadata2?sort=${column}&order=${order}&cat=${cat}`, {}, {
+        target: '#data-table'
+    });
+}
+
+	
+		function toggleOrder(column) {
+			const th = document.querySelector(`[data-sort="${column}"]`);
+			const currentOrder = th.getAttribute('data-order') || 'asc';
+			const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+			th.setAttribute('data-order', newOrder);
+			return newOrder;
+		}
+
+		function prepareHxVals(evt) {
+    const th = evt.currentTarget;
+    const sort = th.getAttribute('data-sort');
+    const order = toggleOrder(sort); 
+    const category = document.querySelector('select[name="cat"]').value;
+    th.setAttribute('hx-vals', JSON.stringify({ sort: sort, order: order, cat: category }));
+}
+
+
+
+	</script>
+	 
+</body>
+</html>
